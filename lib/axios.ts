@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const api = axios.create({
-    baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api',
+    baseURL: process.env.NEXT_PUBLIC_API_URL || 'https://be.putratek.my.id/api',
     // withCredentials: true, // commented out because backend uses wildcard Access-Control-Allow-Origin: *
     headers: {
         'Content-Type': 'application/json',

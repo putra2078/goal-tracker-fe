@@ -5,7 +5,7 @@ const nextConfig: NextConfig = {
     return [
       {
         source: '/api/:path*',
-        destination: 'http://localhost:8080/api/:path*', // Proxy to Backend
+        destination: 'https://be.putratek.my.id/api/:path*', // Proxy to Backend
       },
     ];
   },

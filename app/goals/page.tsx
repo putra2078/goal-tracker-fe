@@ -1,13 +1,13 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Target, CheckCircle2, Circle, Clock, Filter, Search, Plus, Loader2 } from "lucide-react";
+import { Target, CheckCircle2, Circle, Clock, Filter, Search, Plus, Loader2, Tag } from "lucide-react";
 import Link from "next/link";
 import { CreateGoalModal } from "@/components/CreateModals";
 import { EditGoalModal } from "@/components/EditModals";
 import Dropdown from "@/components/Dropdown";
 import api from "@/lib/axios";
-import { Goal } from "@/lib/types";
+import { Goal, Category } from "@/lib/types";
 
 // Status helper
 const getStatusConfig = (progress: number) => {
@@ -25,26 +25,32 @@ const getGoalColor = (goalId: string) => {
 
 export default function GoalPage() {
     const [goals, setGoals] = useState<Goal[]>([]);
+    const [categories, setCategories] = useState<Category[]>([]);
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState("");
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [editingGoal, setEditingGoal] = useState<Goal | null>(null);
 
-    const fetchGoals = useCallback(async () => {
+    const fetchData = useCallback(async () => {
+        setLoading(true);
         try {
-            const response = await api.get("/goal/");
-            setGoals(Array.isArray(response.data) ? response.data : []);
+            const [goalsRes, categoriesRes] = await Promise.all([
+                api.get("/goal/"),
+                api.get("/category/")
+            ]);
+            setGoals(Array.isArray(goalsRes.data) ? goalsRes.data : []);
+            setCategories(Array.isArray(categoriesRes.data) ? categoriesRes.data : []);
         } catch (error) {
-            console.error("Failed to fetch goals:", error);
+            console.error("Failed to fetch data:", error);
         } finally {
             setLoading(false);
         }
     }, []);
 
     useEffect(() => {
-        fetchGoals();
-    }, [fetchGoals]);
+        fetchData();
+    }, [fetchData]);
 
     const handleEdit = (goal: Goal) => {
         setEditingGoal(goal);
@@ -55,7 +61,7 @@ export default function GoalPage() {
         if (!confirm("Are you sure you want to delete this goal?")) return;
         try {
             await api.delete(`/goal/${id}`);
-            fetchGoals();
+            fetchData();
         } catch (error) {
             console.error("Failed to delete goal:", error);
         }
@@ -116,6 +122,7 @@ export default function GoalPage() {
 
                         const { label: statusLabel, icon: StatusIcon, className: statusClass } = getStatusConfig(progress);
                         const { color, bg } = getGoalColor(goal.id);
+                        const categoryName = categories.find(c => c.id === goal.category_id)?.name || "Uncategorized";
 
                         return (
                             <Link
@@ -130,10 +137,14 @@ export default function GoalPage() {
                                 <div className="flex-1 space-y-4 md:space-y-0">
                                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                                         <div className="space-y-1">
-                                            <div className="flex items-center gap-2">
+                                            <div className="flex items-center gap-2 flex-wrap">
                                                 <h3 className="text-xl font-bold text-foreground">{goal.title}</h3>
                                                 <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${statusClass}`}>
                                                     {statusLabel}
+                                                </span>
+                                                <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-foreground/5 text-secondary border border-border">
+                                                    <Tag size={10} />
+                                                    {categoryName}
                                                 </span>
                                             </div>
                                             <p className="text-sm text-secondary flex items-center gap-2">
@@ -177,7 +188,7 @@ export default function GoalPage() {
             <CreateGoalModal
                 isOpen={isCreateModalOpen}
                 onClose={() => setIsCreateModalOpen(false)}
-                onSuccess={fetchGoals}
+                onSuccess={fetchData}
             />
             <EditGoalModal
                 isOpen={isEditModalOpen}
@@ -185,7 +196,7 @@ export default function GoalPage() {
                     setIsEditModalOpen(false);
                     setEditingGoal(null);
                 }}
-                onSuccess={fetchGoals}
+                onSuccess={fetchData}
                 data={editingGoal}
             />
         </div>
